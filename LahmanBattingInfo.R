@@ -44,6 +44,9 @@ library(data.table)
 boundBatting <- rbindlist(dfList, idcol = "origin")
 boundBatting$origin <- factor(boundBatting$origin, levels=c(1,2),labels = c("vsLeft", "vsRight"))
 
+table(boundBatting$origin, boundBatting$bats)
+#one B is different than a R, which is odd but probably due to the !duplicated method
+
 ##################################
 ## Exploring the platoon effect ##
 ##################################

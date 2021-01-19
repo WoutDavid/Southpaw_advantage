@@ -1,4 +1,4 @@
-##The idea of this Rscript is to import the statcast data of the MLB pitchers of 2020 and see if i can use their pitch stats to find a classifier for them being a lefty or righty
+##The idea of this Rscript is to import the statcast data of the MLB pitchers of 2019 and see if i can use their pitch stats to find a classifier for them being a lefty or righty
 pitchers <- read.csv("data/baseballsavant_2019.csv")
 ##how many Left and Right handed pitchers are there actually
 table(pitchers$pitch_hand)
@@ -9,32 +9,33 @@ for(i in 1:ncol(pitchers)) {
 }
 pitchers <- subset(pitchers, select=-X)
 pitchers <- na.omit(pitchers)
-
+nrow(pitchers)
+table(pitchers$pitch_hand)
 ##profile plot
-pit.mat <- as.matrix(pitchers[,5:17]) #13 remaining variables
- #max=3100
+pit.mat <- as.matrix(pitchers[,7:15]) #9 remaining variables
+#max=3100
 
 ##we need to standarize for these numbers to make any sense
 rmean<-apply(pit.mat,2,mean)
 rvar<-apply(pit.mat,2,var)
 rstd <- sqrt(rvar)
-for(k in (1:13)){
+for(k in (1:9)){
   pit.mat[,k] <- (pit.mat[,k]-rmean[k])/rstd[k]
 }
 var(pit.mat)
-apply(pit.mat,2,min) #min=0
-apply(pit.mat,2,max)
+apply(pit.mat,2,min) #min=-4.5
+apply(pit.mat,2,max) #max= 3
 #create plot without dots
-plot(c(0,14),c(-5,7),type="n",xlab="var",ylab="Value",main="Profile Plot")
-for (k in (1:385)){
-  points(1:13,pit.mat[k,],type="l")
+plot(c(0,10),c(-4.5,3),type="n",xlab="var",ylab="Value",main="Profile Plot")
+for (k in (1:262)){
+  points(1:9,pit.mat[k,],type="l")
 }
 ##super cluttered, i'll probably have cut down on my observations
 
 ##andrews plot
 t <-seq(-pi,pi,length=500)
 plot(c(-pi,pi),c(-6,7),type="n",xlab="var",ylab="Value",main="Andrews Plot - Pitcher Data")
-for (k in (1:385)){
+for (k in (1:262)){
   crseq <- (pit.mat[k,1]/sqrt(2))+pit.mat[k,2]*sin(t) + pit.mat[k,3]*cos(t)+pit.mat[k,4]*cos(2*t)
   points(t,crseq,type="l")
 }
@@ -49,7 +50,7 @@ stars(pit.mat)
 ##Hierarchical clustering #
 ###########################
 ##recreating the matrix of the data
-pit.mat <- as.matrix(pitchers[,5:17])
+pit.mat <- as.matrix(pitchers[,7:15])
 #performing hclustering
 pit.clus <-hclust(dist(pit.mat), method="average")
 plot(pit.clus)
@@ -95,7 +96,7 @@ pit.pkcl <- kmeans(pit.pca$scores,2,20)
 par(mfrow=c(1,1))
 plot(pit.pca$scores[,1:2], col = pit.pkcl$cluster)
 points(pit.pkcl$centers[,c(1,2)], col = 1:2, pch ="+", cex=2)
-title ("k-means clustering on the first two Principal Components - Rock Data")
+title ("k-means clustering on the first two Principal Components - Pitcher Data")
 
 table(pitchers$pitch_hand,pit.kcl$cluster)
 ###according to hierarchical get 35 right, but a whole lot more wrong, so this is not succesful.
@@ -107,23 +108,23 @@ table(pitchers$pitch_hand,pit.kcl$cluster)
 library(MASS)
 names(pitchers)
 attach(pitchers)
-kernel.lda<-lda(pitch_hand~n_fastball_formatted+ fastball_avg_speed+ fastball_avg_spin+ fastball_avg_break+ n_breaking_formatted+ breaking_avg_speed+ breaking_avg_spin+ breaking_avg_break+ n_offspeed_formatted+ offspeed_avg_speed+ offspeed_avg_spin+ offspeed_avg_break,pitchers)
+kernel.lda<-lda(pitch_hand~fastball_avg_speed+ fastball_avg_spin+ fastball_avg_break+ breaking_avg_speed+ breaking_avg_spin+ breaking_avg_break+ offspeed_avg_speed+ offspeed_avg_spin+ offspeed_avg_break,pitchers)
 kernel.lda
 plot(kernel.lda)
 kernel.pred<-predict(kernel.lda)
 plot(kernel.pred$posterior,main="Posterior probabilities for belonging to Left or Right")
 table(pitchers$pitch_hand,kernel.pred$class,dnn=c("From","Classified into"))
 ##lda still does pretty bad, it gets only 1/3d correct for the L's, which is bad ofcourse.
-kernel.ldacv<-lda(pitch_hand~n_fastball_formatted+ fastball_avg_speed+ fastball_avg_spin+ fastball_avg_break+ n_breaking_formatted+ breaking_avg_speed+ breaking_avg_spin+ breaking_avg_break+ n_offspeed_formatted+ offspeed_avg_speed+ offspeed_avg_spin+ offspeed_avg_break,pitchers, CV=TRUE)
+kernel.ldacv<-lda(pitch_hand~fastball_avg_speed+ fastball_avg_spin+ fastball_avg_break+ breaking_avg_speed+ breaking_avg_spin+ breaking_avg_break+ offspeed_avg_speed+ offspeed_avg_spin+ offspeed_avg_break,pitchers, CV=TRUE)
 table(pitchers$pitch_hand,kernel.ldacv$class,dnn=c("From","Classified into"))
 ##cross validation actually does worse!!!
 
 ##quadratic
-kernel.qda<-qda(pitch_hand~n_fastball_formatted+ fastball_avg_speed+ fastball_avg_spin+ fastball_avg_break+ n_breaking_formatted+ breaking_avg_speed+ breaking_avg_spin+ breaking_avg_break+ n_offspeed_formatted+ offspeed_avg_speed+ offspeed_avg_spin+ offspeed_avg_break,pitchers)
+kernel.qda<-qda(pitch_hand~fastball_avg_speed+fastball_avg_spin+ fastball_avg_break+ breaking_avg_speed+ breaking_avg_spin+ breaking_avg_break+ offspeed_avg_speed+ offspeed_avg_spin+ offspeed_avg_break,pitchers)
 kernel.predq<-predict(kernel.qda)
 table(pitchers$pitch_hand,kernel.predq$class,dnn=c("From","Classified into"))
 ##interesting, this one does a bit better, half of the L's is correct
-kernel.qdacv<-qda(pitch_hand~n_fastball_formatted+ fastball_avg_speed+ fastball_avg_spin+ fastball_avg_break+ n_breaking_formatted+ breaking_avg_speed+ breaking_avg_spin+ breaking_avg_break+ n_offspeed_formatted+ offspeed_avg_speed+ offspeed_avg_spin+ offspeed_avg_break,pitchers, CV=TRUE)
+kernel.qdacv<-qda(pitch_hand~ fastball_avg_speed+ fastball_avg_spin+ fastball_avg_break+ breaking_avg_speed+ breaking_avg_spin+ breaking_avg_break+ offspeed_avg_speed+ offspeed_avg_spin+ offspeed_avg_break,pitchers, CV=TRUE)
 table(pitchers$pitch_hand,kernel.qdacv$class,dnn=c("From","Classified into"))
 ##worse again, that's super weird.
 
@@ -134,7 +135,7 @@ table(pitchers$pitch_hand,kernel.qdacv$class,dnn=c("From","Classified into"))
 
 library(rpart)
 library(tree)
-hand.ind<-rpart(pitch_hand~+n_fastball_formatted+ fastball_avg_speed+ fastball_avg_spin+ fastball_avg_break+ n_breaking_formatted+ breaking_avg_speed+ breaking_avg_spin+ breaking_avg_break+ n_offspeed_formatted+ offspeed_avg_speed+ offspeed_avg_spin+ offspeed_avg_break,pitchers,method="class")
+hand.ind<-rpart(pitch_hand~ fastball_avg_speed+ fastball_avg_spin+ fastball_avg_break+ breaking_avg_speed+ breaking_avg_spin+ breaking_avg_break+ offspeed_avg_speed+ offspeed_avg_spin+ offspeed_avg_break,pitchers,method="class")
 plot(hand.ind,uniform=F)         
 text(hand.ind)
 printcp(hand.ind)
@@ -148,7 +149,7 @@ summary(hand.ind)
 attach(pitchers)
 ##had some issues here, it's important that the response variable is a vector for some reason
 pitch_hand <- as.factor(pitch_hand)  
-handtree.ind <-tree(pitch_hand~n_fastball_formatted+ fastball_avg_speed+ fastball_avg_spin+ fastball_avg_break+ n_breaking_formatted+ breaking_avg_speed+ breaking_avg_spin+ breaking_avg_break+ n_offspeed_formatted+ offspeed_avg_speed+ offspeed_avg_spin+ offspeed_avg_break,method="recursive.partition",split="deviance")
+handtree.ind <-tree(pitch_hand~fastball_avg_speed+ fastball_avg_spin+ fastball_avg_break+ breaking_avg_speed+ breaking_avg_spin+ breaking_avg_break+ offspeed_avg_speed+ offspeed_avg_spin+ offspeed_avg_break,method="recursive.partition",split="deviance")
 plot(handtree.ind,uniform=F)         
 text(handtree.ind) 
 ##here i have unnecessary splits in the end, so i'm gonna have to do some pruning
@@ -156,7 +157,7 @@ handtree.ind.cv <- cv.tree(handtree.ind,FUN=prune.tree)
 plot(handtree.ind.cv$size,handtree.ind.cv$k,type="l") 
 plot(handtree.ind.cv$size,handtree.ind.cv$dev,type="l",xlab="Number of end nodes",ylab="Deviance") 
 #use info from these plots to then prune the actual tree
-pruned.handtree.ind<-prune.tree(handtree.ind,best=6) 
+pruned.handtree.ind<-prune.tree(handtree.ind,best=5) 
 summary(pruned.handtree.ind)
 plot(pruned.handtree.ind)
 text(pruned.handtree.ind)

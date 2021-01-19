@@ -2,7 +2,7 @@
 library(plotrix)
 library(dplyr)
 ##Baseball
-pitchers <- read.csv("baseballsavant.csv")
+pitchers <- read.csv("data/baseballsavant_2019.csv")
 pitchers <- as.data.frame(pitchers)
 names(pitchers)
 for(i in 1:ncol(pitchers)) {   
@@ -19,7 +19,7 @@ head(pitchers)
 ##PCA
 ##selecting the numerical coumns
 ##pairs doesn't do much cause shit is correlated and i have way too many variables?
-mat <- pitchers[,5:17]
+mat <- pitchers[,7:15]
 mat
 pairs(mat)
 cor(mat)
@@ -98,11 +98,11 @@ PCA.biplot(p.mat)
 p.cor <- cor(p.mat)
 p.pca <-eigen(p.cor)
 #i'm using 5 largest eigenvalues, cause that's what the screeplot implied.
-p.p <- p.pca$vectors[,1:5]            #Select first 3 eigenvectors, corresponding to the three largest eigenvalues
-p.d <- diag(sqrt(p.pca$values[1:5]))  #Make a diagonal matrix of the standard deviations of the Principal Components
+p.p <- p.pca$vectors[,1:4]            #Select first 3 eigenvectors, corresponding to the three largest eigenvalues
+p.d <- diag(sqrt(p.pca$values[1:4]))  #Make a diagonal matrix of the standard deviations of the Principal Components
 p.B <- p.p%*%p.d  #  Scale Principal Component loadings so they become correlations, thus Factor Loadings. Post-multiply with the standard deviations of the Principal Components
-rownames(p.B) <- names(pitchers)[5:17]      #As row names for the factor loadings matrix, take the variable names of cereal
-colnames(p.B) <- c("B1","B2","B3","B4","B5")       #Give the columns of the factor loadings matrix names
+rownames(p.B) <- names(pitchers)[7:15]      #As row names for the factor loadings matrix, take the variable names of cereal
+colnames(p.B) <- c("B1","B2","B3","B4")       #Give the columns of the factor loadings matrix names
 p.B                                      #Show loadings pattern                                
 p.B%*%t(p.B)                           #Calculate and show the estimated correlation matrix, based on the loadings pattern. The communalities are on the head diagonal
 p.psi <- p.cor - p.B%*%t(p.B)      #Calculate the difference between the observed correlation matrix and the estimated one, specific variances are on the head diagonal
@@ -111,14 +111,3 @@ diag(p.B%*%t(p.B))                     #The communalities are the sum of the squ
 1-diag(p.psi)                            #The communalities are  1-specific variances
 ##this all works, I just havent taken the time to actually interpret it
 
-#################
-## Lahman's data ##
-#################
-library(Lahman)
-data("Pitching")
-class(Pitching)
-pitching <- subset(x=Pitching, yearID==2019, select=-c(stint, IPouts))
-data("People")
-people <- subset(People, select=c(nameFirst, nameLast, playerID,birthYear,birthCountry, weight, height, bats, throws))
-merged <- merge(pitching, people, by="playerID", no.dups=TRUE,  )
-names(merged)
