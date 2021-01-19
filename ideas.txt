@@ -1,0 +1,5 @@
+- classification: check if i can find L and R by use of stats: performance vs L/or R would be easy, but i cant find data for that so lets try the more difficult one and use the variables speed and break, and see if i can make a tree/NN that can predict a pitcher being lefthanded or not
+- clustering: the same as classification but unsupervised
+- bakcup classification: see if i can find factors explaining team or NLvsAL this might be better for batters instead of pitchers tho
+- Factor: see if i can find the underlying factor "has a working offspeed pitch
+- biplot: find correlation between speed and spin? 
