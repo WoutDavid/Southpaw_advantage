@@ -1,5 +1,4 @@
 ##loading the data
-#installing gss api
 library(plotrix)
 library(dplyr)
 ##Baseball
