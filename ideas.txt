@@ -7,4 +7,9 @@
 - classification backup: checking to see if you can classify lefties/righties based on performance agains lefties/righties
 - clustering: the same as classification but unsupervised
 - Factor: see if i can find the underlying factor "has a working offspeed pitch"
-- biplot: find correlation between speed and spin? 
+- biplot: find correlation between speed and spin?
+
+
+What am I expecting to find?:
+- platoon effect: batters hit better agains same opposite hand pitchers
+ 

@@ -31,19 +31,45 @@ battingVersusLeft <- withBattingHand[!duplicated(withBattingHand$LASTNAME, withB
 
 withBattingHand <- merge(versusRight, df, by = c("LASTNAME", "FIRSTNAME"))
 battingVersusRight <- withBattingHand[!duplicated(withBattingHand$LASTNAME, withBattingHand$LASTNAME),]
+summary(battingVersusLeft)
+summary(battingVersusRight)
+##39 Lefties, 65 Righties
+##mean OBP is incredibly similar
 
 #creating a list of dataframes
 dfList <- NULL
 dfList[[1]] = battingVersusLeft
 dfList[[2]] = battingVersusRight
 library(data.table)
-boundBatting <- rbindlist(dfList, idcol = "Origin")
-boundBatting
-##index 1 = agains left, index 2 = right
+boundBatting <- rbindlist(dfList, idcol = "origin")
+boundBatting$origin <- factor(boundBatting$origin, levels=c(1,2),labels = c("vsLeft", "vsRight"))
 
 ##################################
 ## Exploring the platoon effect ##
 ##################################
+library(ggplot2)
+ggplot(boundBatting, aes(x=origin, y=OBP, fill=bats)) + 
+  geom_boxplot()
 par(mfrow=c(1,2))
 boxplot(OBP ~ bats, battingVersusLeft)
 boxplot(OBP ~ bats, battingVersusRight)
+
+###########
+## Trees ##
+###########
+
+##here I build a tree to see if based on OBP and batting hand, the tree can guess if this stat combination is from the vsLeft or vsRight table
+library(rpart)
+library(tree)
+hand.ind<-rpart(origin~OBP + bats,boundBatting,method="class")
+plot(hand.ind,uniform=F)         
+text(hand.ind)
+printcp(hand.ind)
+plotcp(hand.ind)
+
+rpart.pred <- predict(hand.ind,type="class")
+table(boundBatting$origin, rpart.pred, dnn=c("From","Classified into"))
+#it has about a 70% chance of getting it correct, which is pretty cool.
+summary(hand.ind)
+
+

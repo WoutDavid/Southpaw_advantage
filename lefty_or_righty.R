@@ -1,5 +1,5 @@
 ##The idea of this Rscript is to import the statcast data of the MLB pitchers of 2020 and see if i can use their pitch stats to find a classifier for them being a lefty or righty
-pitchers <- read.csv("data/baseballsavant.csv")
+pitchers <- read.csv("data/baseballsavant_2019.csv")
 ##how many Left and Right handed pitchers are there actually
 table(pitchers$pitch_hand)
 pitchers <- as.data.frame(pitchers)
