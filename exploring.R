@@ -10,19 +10,22 @@ for(i in 1:ncol(pitchers)) {
 }
 pitchers <- subset(pitchers, select=-X)
 pitchers <- na.omit(pitchers)
-##for now i'm working with 78 pitchers that don't have an offspeed pitch, I might come back from that
-##I already came back from that
 
 ##Exploratory analysis
 attach(pitchers)
 head(pitchers)
+
 ##PCA
-##selecting the numerical coumns
-##pairs doesn't do much cause shit is correlated and i have way too many variables?
+##selecting the numerical columns
 mat <- pitchers[,7:15]
-mat
+dim(mat)
 pairs(mat)
-cor(mat)
+##linear correlation between spin rate and break, and also between the different speeds
+##little correlation between speed and spin, which is good
+install.packages("plot.matrix")
+library(plot.matrix)
+plot(cor(mat))
+##from this I can see that there is a super negative correlation between breaking avg speed and offspeed avg speed
 
 pca <- princomp(mat)
 pca$loadings
