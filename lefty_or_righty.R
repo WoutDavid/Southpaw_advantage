@@ -3,6 +3,11 @@ pitchers <- read.csv("data/baseballsavant_2019.csv")
 ##how many Left and Right handed pitchers are there actually
 table(pitchers$pitch_hand)
 pitchers <- as.data.frame(pitchers)
+######################################"
+## only speed:
+pitchers <- pitchers["fastball_avg_speed", "breaking_avg_speed", "offspeed_avg_speed"]
+##might wanna change that still cause offspeed is supposed to be slower?
+######################################
 names(pitchers)
 for(i in 1:ncol(pitchers)) {   
   print(sum(is.na(pitchers[,i])))

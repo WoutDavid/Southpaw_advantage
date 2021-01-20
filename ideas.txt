@@ -10,6 +10,30 @@
 - biplot: find correlation between speed and spin?
 
 
+TODOs found by going through the course material:
+- histogram
+- outliers- see PCA: univariate distribution
+- covariance matrix: show that the variables are correlated, not independant, same for correlation matrix
+- ANOVA to show that there is significant difference between the two groups?
+- Log regression to show the platoon effect
+
 What am I expecting to find?:
 - platoon effect: batters hit better agains same opposite hand pitchers
- 
+- changeup should be the only thing on which lefties have a higher spin rate 
+
+
+Ordination: 
+- PCA to see how many clusters it finds
+- Factor analysis to see what variables are necessary - this works well cause its highly correlated
+- Biplot cause he loves it
+
+Clustering:
+- Hierarchical clustering to see what it does
+
+Outline: 
+1) introduction
+2) Showing the platoon effect with boxplots
+3) Discovering pitch metric stats: explorations
+4) Showing correlated structure between the variables --> FA might be good then
+5) Clustering to show that L vs R isn't really the grouping structure that's being found
+6) Classification to see if I can build something that will find the R vs L structure.
