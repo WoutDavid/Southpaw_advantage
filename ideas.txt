@@ -16,6 +16,7 @@ TODOs found by going through the course material:
 - covariance matrix: show that the variables are correlated, not independant, same for correlation matrix
 - ANOVA to show that there is significant difference between the two groups?
 - Log regression to show the platoon effect
+- Fix the weird bi-batter that doesn't match
 
 What am I expecting to find?:
 - platoon effect: batters hit better agains same opposite hand pitchers

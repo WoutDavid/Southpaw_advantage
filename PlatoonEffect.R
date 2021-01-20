@@ -5,7 +5,7 @@
 ######################
 # Preparing the data #
 ######################
-
+library(ggplot2)
 library(dplyr)
 #importing the data I webscraped from mlb.com/stats/
 versusLeft <- read.csv("data/versusLeft.csv")
@@ -41,21 +41,35 @@ dfList <- NULL
 dfList[[1]] = battingVersusLeft
 dfList[[2]] = battingVersusRight
 library(data.table)
-boundBatting <- rbindlist(dfList, idcol = "origin")
-boundBatting$origin <- factor(boundBatting$origin, levels=c(1,2),labels = c("vsLeft", "vsRight"))
+combinedBatting <- rbindlist(dfList, idcol = "origin")
+combinedBatting$origin <- factor(combinedBatting$origin, levels=c(1,2),labels = c("vsLeft", "vsRight"))
 
-table(boundBatting$origin, boundBatting$bats)
+table(combinedBatting$origin, combinedBatting$bats)
 #one B is different than a R, which is odd but probably due to the !duplicated method
+
+########################
+## Exploring the data ##
+########################
+ggplot(battingVersusLeft, aes(x=bats, y=OBP)) + geom_point()
 
 ##################################
 ## Exploring the platoon effect ##
 ##################################
+tempLeft <- battingVersusLeft[battingVersusLeft$bats=="R" | battingVersusLeft$bats=="L",c("OBP", "bats")]
+tempRight <- battingVersusRight[battingVersusRight$bats=="R" | battingVersusRight$bats=="L",c("OBP", "bats")]
+#Logistic regression for batting vs left
+left.log <- glm(bats ~ OBP, data=tempLeft, family=binomial(link="logit"))
+summary(left.log)
+exp(cbind(OR =left.log$coefficients, confint(left.log)))
+
+#Logistic regression for batting vs right
+right.log <- glm(bats ~ OBP, data=tempRight, family=binomial(link="logit"))
+summary(right.log)
+exp(cbind(OR =right.log$coefficients, confint(right.log)))
+
 library(ggplot2)
-ggplot(boundBatting, aes(x=origin, y=OBP, fill=bats)) + 
+ggplot(combinedBatting, aes(x=origin, y=OBP, fill=bats)) + 
   geom_boxplot()
-par(mfrow=c(1,2))
-boxplot(OBP ~ bats, battingVersusLeft)
-boxplot(OBP ~ bats, battingVersusRight)
 
 ###########
 ## Trees ##
@@ -64,14 +78,15 @@ boxplot(OBP ~ bats, battingVersusRight)
 ##here I build a tree to see if based on OBP and batting hand, the tree can guess if this stat combination is from the vsLeft or vsRight table
 library(rpart)
 library(tree)
-hand.ind<-rpart(origin~OBP + bats,boundBatting,method="class")
+combinedBatting <- combinedBatting[combinedBatting$bats=="R" | combinedBatting$bats=="L"]
+hand.ind<-rpart(origin~OBP + bats,combinedBatting,method="class")
 plot(hand.ind,uniform=F)         
 text(hand.ind)
 printcp(hand.ind)
 plotcp(hand.ind)
 
 rpart.pred <- predict(hand.ind,type="class")
-table(boundBatting$origin, rpart.pred, dnn=c("From","Classified into"))
+table(combinedBatting$origin, rpart.pred, dnn=c("From","Classified into"))
 #it has about a 70% chance of getting it correct, which is pretty cool.
 summary(hand.ind)
 
