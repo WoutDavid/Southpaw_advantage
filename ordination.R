@@ -1,5 +1,4 @@
 ##loading the data
-library(plotrix)
 library(dplyr)
 ##Baseball
 pitchers <- read.csv("data/baseballsavant_2019.csv")
@@ -22,12 +21,15 @@ dim(mat)
 pairs(mat)
 ##linear correlation between spin rate and break, and also between the different speeds
 ##little correlation between speed and spin, which is good
-install.packages("plot.matrix")
+#install.packages("plot.matrix")
 library(plot.matrix)
 plot(cor(mat))
 ##from this I can see that there is a super negative correlation between breaking avg speed and offspeed avg speed
 
 pca <- princomp(mat)
+pca
+plot(pca)
+##it's clear that the first 3 pca's are probably just picking up on the three different types of pitches
 pca$loadings
 screeplot(pca, type="lines")
 summary(pca)
@@ -36,12 +38,16 @@ summary(pca)
 cov <- cov(mat)
 xxx <- cbind(mat,pca$scores)
 ##check correlation between variables and principal components
-cor(xxx)
+par(mfrow=c(1,1))
+plot(cor(xxx))
 ##possibly todo: PCA on centered/scaled data, in which you use the cov matrix to perform PCA on.
 #5 PCA's seem enough to describe most of the variance, almost too well acutally, seems a bit strange.
 #it's intersting thet the first 4 princomps actually hold the variance well distributed
-##some exploring plots:
-##BIPLOT
+############
+## BIPLOT ##
+############
+
+library(plotrix)
 PCA.biplot<- function(x) {
   #x is the matrix to biplot, x is numeric, thus variables on ratio or interval scales
   #x has dimnames(x)[[2]] defined (and eventually dimnames(x)[[1]] defined)
@@ -91,17 +97,22 @@ PCA.biplot<- function(x) {
   cat('The goodness of fit for the correlation matrix is',gfr,'for the centered, standardized design matrix',gfz,'and for the Mahalanobis distances is',gfd,' ')
   results
 }
+
 p.mat<- as.matrix(mat)
 class(p.mat)
 p.mat
 par(mfrow=c(1,1))
 PCA.biplot(p.mat)
 
+#####################
+## Factor analysis ##
+#####################
+
 #PCA's looked good, so we'll use those to calculate the factor analysis
 p.cor <- cor(p.mat)
 p.pca <-eigen(p.cor)
-#i'm using 5 largest eigenvalues, cause that's what the screeplot implied.
-p.p <- p.pca$vectors[,1:4]            #Select first 3 eigenvectors, corresponding to the three largest eigenvalues
+#i'm using 4 largest eigenvalues, cause that's what the screeplot implied.
+p.p <- p.pca$vectors[,1:4]            #Select first 4 eigenvectors, corresponding to the four largest eigenvalues
 p.d <- diag(sqrt(p.pca$values[1:4]))  #Make a diagonal matrix of the standard deviations of the Principal Components
 p.B <- p.p%*%p.d  #  Scale Principal Component loadings so they become correlations, thus Factor Loadings. Post-multiply with the standard deviations of the Principal Components
 rownames(p.B) <- names(pitchers)[7:15]      #As row names for the factor loadings matrix, take the variable names of cereal
@@ -113,4 +124,32 @@ p.psi                                    #Show the residual correlation matrix, 
 diag(p.B%*%t(p.B))                     #The communalities are the sum of the squared loadings, thus the head diagonal of the estimated correlation matrix 
 1-diag(p.psi)                            #The communalities are  1-specific variances
 ##this all works, I just havent taken the time to actually interpret it
+
+##WORKING FA from source####################
+pit.fmle.r <- factanal(mat,factors=4,scores="Bartlett",rotation="varimax")
+pit.fmle.r
+
+plot(pit.fmle.r$loadings[,1], 
+     pit.fmle.r$loadings[,2],
+     xlab = "Factor 1", 
+     ylab = "Factor 2", 
+     ylim = c(-1,1),
+     xlim = c(-1,1),
+     main = "Varimax rotation")
+
+text(pit.fmle.r$loadings[,1]-0.08, 
+     pit.fmle.r$loadings[,2]+0.08,
+     colnames(mat),
+     col="blue")
+###########################################
+## ----->> Factor 2 might be the difference in lefties/righties we see
+attributes(pit.fmle.r)
+B.mler <-pit.fmle.r$loadings
+B.mler
+psi.mler <- diag(pit.fmle.r$uniquenesses)
+ispi <- solve(psi.mler)
+pit.fmle.r$scores
+# Check result of factanal with matrix algebra
+
+##TODO more maths like RMSE like he does in his factor analysis thing
 
