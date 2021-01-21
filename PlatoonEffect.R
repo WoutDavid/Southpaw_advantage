@@ -71,6 +71,9 @@ library(ggplot2)
 ggplot(combinedBatting, aes(x=origin, y=OBP, fill=bats)) + 
   geom_boxplot()
 
+anova(left.log, test="Chisq")
+anova(right.log,test="Chisq")
+
 ###########
 ## Trees ##
 ###########

@@ -75,4 +75,39 @@ pairs(pitchers[,7:15], col = c("red","purple")[pit.cutTree])
 
 ##TODO Retry with scaled/centered data and then also try different values of K, or complete linakge
 
+#################################
+## Non-Hierarchical Clustering ##
+#################################
+pit.kmeans <- kmeans(pit.mat, 2)
+names(pit.kmeans)
+pit.kmeans$cluster
+pairs(pitchers[,7:15], col= c("red","purple")[pit.kmeans$cluster] )
+#def not a perfecct group structure
+library(cluster)
+clusplot(pit.mat,pit.kmeans$cluster,stand=TRUE,main="k-means clustering on pitchers data")
 
+table(pit.kmeans$cluster)
+pit.clus.results <- character()
+for (i in 1:length(pit.kmeans)){
+  if (pit.kmeans[i]==1){
+    pit.clus.results[i] = "R"
+  }
+  if (pit.kmeans[i]==2){
+    pit.clus.results[i] = "L"
+  }
+}
+correct_L_calls = 0
+for (i in 1:nrow(pitchers)){
+  if ((pitchers$pitch_hand[i]=="L") & pit.clus.results[i]=="L"){
+    correct_L_calls = correct_L_calls + 1
+  }
+}
+correct_L_calls
+
+#################################
+## Bayesian clustering with EM ##
+#################################
+library(mclust)
+fit <- Mclust(pit.mat)
+plot(fit)
+summary(fit)
