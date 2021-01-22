@@ -5,7 +5,6 @@
 ######################
 # Preparing the data #
 ######################
-library(ggplot2)
 library(dplyr)
 #importing the data I webscraped from mlb.com/stats/
 versusLeft <- read.csv("data/versusLeft.csv")
@@ -28,9 +27,12 @@ df = merged[!duplicated(merged$LASTNAME, merged$LASTNAME),]
 
 withBattingHand <- merge(versusLeft, df, by = c("LASTNAME", "FIRSTNAME"))
 battingVersusLeft <- withBattingHand[!duplicated(withBattingHand$LASTNAME, withBattingHand$LASTNAME),]
+battingVersusLeft <- battingVersusLeft[!battingVersusLeft$bats=="B",]
 
 withBattingHand <- merge(versusRight, df, by = c("LASTNAME", "FIRSTNAME"))
 battingVersusRight <- withBattingHand[!duplicated(withBattingHand$LASTNAME, withBattingHand$LASTNAME),]
+battingVersusRight <- battingVersusRight[!battingVersusRight$bats=="B",]
+
 summary(battingVersusLeft)
 summary(battingVersusRight)
 ##39 Lefties, 65 Righties
@@ -45,16 +47,19 @@ combinedBatting <- rbindlist(dfList, idcol = "origin")
 combinedBatting$origin <- factor(combinedBatting$origin, levels=c(1,2),labels = c("vsLeft", "vsRight"))
 
 table(combinedBatting$origin, combinedBatting$bats)
-#one B is different than a R, which is odd but probably due to the !duplicated method
 
 ########################
 ## Exploring the data ##
 ########################
-ggplot(battingVersusLeft, aes(x=bats, y=OBP)) + geom_point()
+library(ggplot2)
+ggplot(combinedBatting, aes(x=origin, y=OBP, fill=bats)) + 
+  geom_boxplot() +
+  ggtitle("Batting performance versus left/right-handed pitchers") + xlab("Pitcher's handedness")
 
 ##################################
 ## Exploring the platoon effect ##
 ##################################
+
 tempLeft <- battingVersusLeft[battingVersusLeft$bats=="R" | battingVersusLeft$bats=="L",c("OBP", "bats")]
 tempRight <- battingVersusRight[battingVersusRight$bats=="R" | battingVersusRight$bats=="L",c("OBP", "bats")]
 #Logistic regression for batting vs left
@@ -67,9 +72,7 @@ right.log <- glm(bats ~ OBP, data=tempRight, family=binomial(link="logit"))
 summary(right.log)
 exp(cbind(OR =right.log$coefficients, confint(right.log)))
 
-library(ggplot2)
-ggplot(combinedBatting, aes(x=origin, y=OBP, fill=bats)) + 
-  geom_boxplot()
+
 
 anova(left.log, test="Chisq")
 anova(right.log,test="Chisq")

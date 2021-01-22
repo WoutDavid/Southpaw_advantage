@@ -33,6 +33,8 @@ plot(pca)
 pca$loadings
 screeplot(pca, type="lines")
 summary(pca)
+library(ggplot2)
+qplot(pca$scores[,1], pca$scores[,2], colour=pitchers$pitch_hand)
 
 ##compute cov matrix
 cov <- cov(mat)
@@ -74,6 +76,7 @@ PCA.biplot<- function(x) {
   plot(R.B[ ,1],R.B[ ,2],axes=F,xlim=c(-1,1),ylim=c(-1,1),xlab=' ',ylab=' ',cex=.8)
   mtext('First component',side=1,line=3,cex=.8)
   mtext('Second component',side=2,line=3,cex=.8)
+  title("Correlational Biplot on Pitch Quality Metric")
   axis(1,at=c(-1,-.8,-.6,-.4,-.2,0,.2,.4,.6,.8,1),cex=.8)
   axis(2,at=c(-1,-.8,-.6,-.4,-.2,0,.2,.4,.6,.8,1),cex=.8)
   box( )
@@ -91,11 +94,6 @@ PCA.biplot<- function(x) {
   
   #Draw circle unit
   draw.circle(0,0,1,border='black')
-  
-  mtext('Correlational Biplot on IRIS data (Factor extraction with Principal Components)',side=1,outer=T,cex=1,line=3,adj=0)
-  results<-list('correlation matrix'=r,'column effects'=C.B,'row effects'=R.B)
-  cat('The goodness of fit for the correlation matrix is',gfr,'for the centered, standardized design matrix',gfz,'and for the Mahalanobis distances is',gfd,' ')
-  results
 }
 
 p.mat<- as.matrix(mat)
@@ -103,7 +101,6 @@ class(p.mat)
 p.mat
 par(mfrow=c(1,1))
 PCA.biplot(p.mat)
-
 #####################
 ## Factor analysis ##
 #####################

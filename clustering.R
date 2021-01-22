@@ -10,11 +10,7 @@ pitchers <- subset(pitchers, select=-X)
 pitchers <- na.omit(pitchers)
 nrow(pitchers)
 table(pitchers$pitch_hand)
-##subsets########
-pitchers_speed <- subset(pitchers, select=c("pitch_hand", "fastball_avg_speed", "breaking_avg_speed", "offspeed_avg_speed"))
-pitchers_break <- subset(pitchers, select=c("pitch_hand", "fastball_avg_break", "breaking_avg_break", "offspeed_avg_break"))
-pitchers_spin <- subset(pitchers, select=c("pitch_hand", "fastball_avg_spin", "breaking_avg_spin", "offspeed_avg_spin"))
-###################
+
 
 ##exploring known grouping structure "Pitch hand"
 par(mfrow=c(1,1))
@@ -23,7 +19,8 @@ group[pitchers$pitch_hand =="R"] <- 2
 group[pitchers$pitch_hand == "L"] <- 1
 table(group)
 table(pitchers$pitch_hand)
-pairs(pitchers[,7:15], col = c("red","purple")[group])
+pairs(pitchers[,7:15], col = c("blue","red")[group])
+
 ##It's obvious that I'm not going to find a nice linear split anywhere.
 
 ##########################
@@ -57,8 +54,6 @@ stars(pit.mat)
 #############################
 ## Hierarchical Clustering ##
 #############################
-#recreating so it isn't normalized anymore
-## I might actually want to center and scale, because 
 pit.mat <- as.matrix(pitchers[,7:15])
 rownames(pit.mat) <-pitchers$last_name
 colnames(pit.mat) <- colnames(pitchers)[7:15]
@@ -73,36 +68,18 @@ plot(pit.cutTree) ##it's obvious that this is not going to be the L vs R groupin
 pairs(pitchers[,7:15], col = c("red","purple")[pit.cutTree])
 #hey look at that, it's not the grouping structure I wanted
 
-##TODO Retry with scaled/centered data and then also try different values of K, or complete linakge
-
 #################################
 ## Non-Hierarchical Clustering ##
 #################################
 pit.kmeans <- kmeans(pit.mat, 2)
 names(pit.kmeans)
 pit.kmeans$cluster
-pairs(pitchers[,7:15], col= c("red","purple")[pit.kmeans$cluster] )
+pairs(pitchers[,7:15], col= c("blue","red")[pit.kmeans$cluster] )
 #def not a perfecct group structure
 library(cluster)
 clusplot(pit.mat,pit.kmeans$cluster,stand=TRUE,main="k-means clustering on pitchers data")
 
-table(pit.kmeans$cluster)
-pit.clus.results <- character()
-for (i in 1:length(pit.kmeans)){
-  if (pit.kmeans[i]==1){
-    pit.clus.results[i] = "R"
-  }
-  if (pit.kmeans[i]==2){
-    pit.clus.results[i] = "L"
-  }
-}
-correct_L_calls = 0
-for (i in 1:nrow(pitchers)){
-  if ((pitchers$pitch_hand[i]=="L") & pit.clus.results[i]=="L"){
-    correct_L_calls = correct_L_calls + 1
-  }
-}
-correct_L_calls
+table(pitchers$pitch_hand,pit.kmeans$cluster)
 
 #################################
 ## Bayesian clustering with EM ##
@@ -111,3 +88,4 @@ library(mclust)
 fit <- Mclust(pit.mat)
 plot(fit)
 summary(fit)
+table(pitchers$pitch_hand, fit$classification)
