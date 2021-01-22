@@ -34,9 +34,11 @@ battingVersusRight <- withBattingHand[!duplicated(withBattingHand$LASTNAME, with
 battingVersusRight <- battingVersusRight[!battingVersusRight$bats=="B",]
 
 summary(battingVersusLeft)
+histogram(battingVersusLeft$OBP)
 summary(battingVersusRight)
+histogram(battingVersusRight$OBP)
+##Both OBP distributions seem normally distributed enough
 ##39 Lefties, 65 Righties
-##mean OBP is incredibly similar
 
 #creating a list of dataframes
 dfList <- NULL
@@ -72,15 +74,12 @@ right.log <- glm(bats ~ OBP, data=tempRight, family=binomial(link="logit"))
 summary(right.log)
 exp(cbind(OR =right.log$coefficients, confint(right.log)))
 
-
-
 anova(left.log, test="Chisq")
 anova(right.log,test="Chisq")
 
 ###########
 ## Trees ##
 ###########
-
 ##here I build a tree to see if based on OBP and batting hand, the tree can guess if this stat combination is from the vsLeft or vsRight table
 library(rpart)
 library(tree)
@@ -95,5 +94,3 @@ rpart.pred <- predict(hand.ind,type="class")
 table(combinedBatting$origin, rpart.pred, dnn=c("From","Classified into"))
 #it has about a 70% chance of getting it correct, which is pretty cool.
 summary(hand.ind)
-
-

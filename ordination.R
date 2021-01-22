@@ -1,6 +1,5 @@
 ##loading the data
 library(dplyr)
-##Baseball
 pitchers <- read.csv("data/baseballsavant_2019.csv")
 pitchers <- as.data.frame(pitchers)
 names(pitchers)
@@ -12,7 +11,6 @@ pitchers <- na.omit(pitchers)
 
 ##Exploratory analysis
 attach(pitchers)
-head(pitchers)
 
 ##PCA
 ##selecting the numerical columns
@@ -24,27 +22,16 @@ pairs(mat)
 #install.packages("plot.matrix")
 library(plot.matrix)
 plot(cor(mat))
-##from this I can see that there is a super negative correlation between breaking avg speed and offspeed avg speed
-
+##from this I can see that there is a  negative correlation between breaking avg speed and offspeed avg speed
 pca <- princomp(mat)
-pca
 plot(pca)
-##it's clear that the first 3 pca's are probably just picking up on the three different types of pitches
+##it's clear that the first 3-4 pca's are probably just picking up on the three different types of pitches
 pca$loadings
 screeplot(pca, type="lines")
 summary(pca)
 library(ggplot2)
 qplot(pca$scores[,1], pca$scores[,2], colour=pitchers$pitch_hand)
 
-##compute cov matrix
-cov <- cov(mat)
-xxx <- cbind(mat,pca$scores)
-##check correlation between variables and principal components
-par(mfrow=c(1,1))
-plot(cor(xxx))
-##possibly todo: PCA on centered/scaled data, in which you use the cov matrix to perform PCA on.
-#5 PCA's seem enough to describe most of the variance, almost too well acutally, seems a bit strange.
-#it's intersting thet the first 4 princomps actually hold the variance well distributed
 ############
 ## BIPLOT ##
 ############
@@ -81,8 +68,6 @@ PCA.biplot<- function(x) {
   axis(2,at=c(-1,-.8,-.6,-.4,-.2,0,.2,.4,.6,.8,1),cex=.8)
   box( )
   
-  #ability to plot rownames on the plot, dimnames(x)[[1]] necessary
-  #text(R.B[,1]-.05,R.B[,2]+.05,as.character(dimnames(x)[[1]]),cex=0.5)
   points(R.B[,1],R.B[,2],pch=".")
   
   
@@ -97,30 +82,12 @@ PCA.biplot<- function(x) {
 }
 
 p.mat<- as.matrix(mat)
-class(p.mat)
-p.mat
 par(mfrow=c(1,1))
 PCA.biplot(p.mat)
+
 #####################
 ## Factor analysis ##
 #####################
-
-#PCA's looked good, so we'll use those to calculate the factor analysis
-p.cor <- cor(p.mat)
-p.pca <-eigen(p.cor)
-#i'm using 4 largest eigenvalues, cause that's what the screeplot implied.
-p.p <- p.pca$vectors[,1:4]            #Select first 4 eigenvectors, corresponding to the four largest eigenvalues
-p.d <- diag(sqrt(p.pca$values[1:4]))  #Make a diagonal matrix of the standard deviations of the Principal Components
-p.B <- p.p%*%p.d  #  Scale Principal Component loadings so they become correlations, thus Factor Loadings. Post-multiply with the standard deviations of the Principal Components
-rownames(p.B) <- names(pitchers)[7:15]      #As row names for the factor loadings matrix, take the variable names of cereal
-colnames(p.B) <- c("B1","B2","B3","B4")       #Give the columns of the factor loadings matrix names
-p.B                                      #Show loadings pattern                                
-p.B%*%t(p.B)                           #Calculate and show the estimated correlation matrix, based on the loadings pattern. The communalities are on the head diagonal
-p.psi <- p.cor - p.B%*%t(p.B)      #Calculate the difference between the observed correlation matrix and the estimated one, specific variances are on the head diagonal
-p.psi                                    #Show the residual correlation matrix, with the specific variances (uniqueness) on the main diagonal
-diag(p.B%*%t(p.B))                     #The communalities are the sum of the squared loadings, thus the head diagonal of the estimated correlation matrix 
-1-diag(p.psi)                            #The communalities are  1-specific variances
-##this all works, I just havent taken the time to actually interpret it
 
 ##WORKING FA from source####################
 pit.fmle.r <- factanal(mat,factors=4,scores="Bartlett",rotation="varimax")
@@ -140,13 +107,5 @@ text(pit.fmle.r$loadings[,1]-0.08,
      col="blue")
 ###########################################
 ## ----->> Factor 2 might be the difference in lefties/righties we see
-attributes(pit.fmle.r)
-B.mler <-pit.fmle.r$loadings
-B.mler
-psi.mler <- diag(pit.fmle.r$uniquenesses)
-ispi <- solve(psi.mler)
-pit.fmle.r$scores
-# Check result of factanal with matrix algebra
 
-##TODO more maths like RMSE like he does in his factor analysis thing
 

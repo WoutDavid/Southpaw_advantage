@@ -28,19 +28,17 @@ table(pitchers$pitch_hand, rpart.pred, dnn=c("From","Classified into"))
 ##checking overfitting by applying this tree on the pitching dataset of 2020
 pitchers_2020 <- read.csv("data/baseballsavant_2020.csv")
 ##how many Left and Right handed pitchers are there actually
-pitchers_2020 <- subset(pitchers, select=-X)
-pitchers_2020 <- na.omit(pitchers)
+pitchers_2020 <- subset(pitchers_2020, select=-X)
+pitchers_2020 <- na.omit(pitchers_2020)
 rpart.pred <- predict(rpart.tree, pitchers_2020,type="class")
 table(pitchers_2020$pitch_hand, rpart.pred, dnn=c("From","Classified into"))
 
-
-library(rsample)      # data splitting 
-library(gbm)          # basic implementation
-library(caret)        # an aggregator package for performing many machine learning models
-library(pdp)          # model visualization
-library(ggplot2)      # model visualization
-library(lime)         # model visualization
-set.seed(123)
+################################################
+## Attempt at boosting the tree, did not work ##
+################################################
+library(rsample)      
+library(gbm)          
+library(caret)        
 pitchers$pitch_hand <- as.numeric(as.factor(pitchers$pitch_hand))-1
 ##0 = left, 1 = right
 pit.split <- initial_split(pitchers, prop = .7)
@@ -70,8 +68,8 @@ hyper_grid <- expand.grid(
   interaction.depth = c(1, 3, 5),
   n.minobsinnode = c(5, 10, 15),
   bag.fraction = c(.65, .8, 1), 
-  optimal_trees = 0,               # a place to dump results
-  min_RMSE = 0                     # a place to dump results
+  optimal_trees = 0,              
+  min_RMSE = 0                    
 )
 
 # randomize data before using train.fraction
@@ -118,14 +116,12 @@ gbm.fit.final <- gbm(
   n.cores = NULL, # will use all cores by default
   verbose = FALSE
 )  
-
 summary(
   gbm.fit.final, 
   cBars = 10,
   method = relative.influence, # also can use permutation.test.gbm
   las = 2
 )
-
 ##predict using the final model on the training data
 pred <- predict.gbm(gbm.fit.final, n.trees = gbm.fit.final$n.trees, pit.test, type="response")
 calibrate.plot(
@@ -144,13 +140,47 @@ calibrate.plot(
   knots = NULL,
   df = 6,
 )
-labels = colnames(pred)[apply(pred, 1, which.max)]
-result = data.frame(test$Species, labels)
-# results
+
+## exploring results
+##calculating RMSE
 caret::RMSE(pred, pit.test$pitch_hand)
-######################################################################################################
-## End of boosting attempt: was not able to fully understand what was going on and how to interpret ##
-######################################################################################################
+##plotting decision making of variables
+plot.gbm(gbm.fit.final, i.var=c(1,4))
+plot.gbm(gbm.fit.final, i.var=c(1,8))
+
+##exploring relative influence of all variables
+effects <- tibble::as_tibble(gbm::summary.gbm(gbm.fit.final, 
+                                                  plotit = FALSE))
+effects %>% utils::head()
+
+effects %>% 
+  # arrange descending to get the top influencers
+  dplyr::arrange(desc(rel.inf)) %>%
+  # sort to top 10
+  dplyr::top_n(9) %>%
+  # plot these data using columns
+  ggplot(aes(x = forcats::fct_reorder(.f = var, 
+                                      .x = rel.inf), 
+             y = rel.inf, 
+             fill = rel.inf)) +
+  geom_col() +
+  # flip
+  coord_flip() +
+  # format
+  scale_color_brewer(palette = "Dark2") +
+  theme_fivethirtyeight() +
+  theme(axis.title = element_text()) + 
+  xlab('Features') +
+  ylab('Relative Influence') +
+  ggtitle("variables plotted by influence in classification score")
+
+#I choose to put an arbitrary threshold on 0.7
+table(pit.test$pitch_hand==0,pred<0.7)
+table(pit.test$pitch_hand)
+
+-##################################################################################################################
+## End of boosting attempt: This turned out to be quite a topic, so i'm not 100% sure I did everything correctly ##
+###################################################################################################################
 
 library(tree)
 attach(pitchers)
@@ -178,6 +208,7 @@ table(pitchers$pitch_hand, tree.pred, dnn=c("From","Classified into"))
 ######################################
 ## Multiple vanilla ML Classifiers: ##
 ######################################
+
 #Mclust
 library(mclust)
 clas <- MclustDA(pitchers[,7:15], pitchers$pitch_hand)
@@ -189,34 +220,24 @@ plot(clas)
 library(mda)
 # fit model
 fit <- fda(pitch_hand~fastball_avg_speed+ fastball_avg_spin+ fastball_avg_break+ breaking_avg_speed+ breaking_avg_spin+ breaking_avg_break+ offspeed_avg_speed+ offspeed_avg_spin+ offspeed_avg_break, data=pitchers)
-# summarize the fit
 summary(fit)
-# make predictions
 predictions <- predict(fit, pitchers[,7:15])
-# summarize accuracy
 table(pitchers$pitch_hand, predictions)
 
 ##KNN
 # fit model
 attach(pitchers)
 library(caret)
-
 fit <- knn3(pitch_hand~fastball_avg_speed+ fastball_avg_spin+ fastball_avg_break+ breaking_avg_speed+ breaking_avg_spin+ breaking_avg_break+ offspeed_avg_speed+ offspeed_avg_spin+ offspeed_avg_break, data=pitchers, k=5)
-# summarize the fit
 summary(fit)
-# make predictions
 predictions <- predict(fit, pitchers[,7:15], type="class")
-# summarize accuracy
 table(predictions, pitchers$pitch_hand)
 
-# load the package
+##Naive Bayes
 library(e1071)
 data(pitchers)
 # fit model
 fit <- naiveBayes(pitch_hand~fastball_avg_speed+ fastball_avg_spin+ fastball_avg_break+ breaking_avg_speed+ breaking_avg_spin+ breaking_avg_break+ offspeed_avg_speed+ offspeed_avg_spin+ offspeed_avg_break, data=pitchers)
-# summarize the fit
 summary(fit)
-# make predictions
 predictions <- predict(fit, pitchers[,7:15])
-# summarize accuracy
 table(predictions, pitchers$pitch_hand)
