@@ -1,13 +1,15 @@
+############################################
+## Classification of pitching metric data ##
+############################################
+
 #The idea of this script is to see if i can make a supervised classifier that can tell the difference between a left handed
 #or right handed pitcher based on their pitch metrics.
 pitchers <- read.csv("data/baseballsavant_2019.csv")
-names(pitchers)
 for(i in 1:ncol(pitchers)) {   
   print(sum(is.na(pitchers[,i])))
 }
 pitchers <- subset(pitchers, select=-X)
 pitchers <- na.omit(pitchers)
-nrow(pitchers)
 table(pitchers$pitch_hand)
 
 ###########
@@ -33,19 +35,21 @@ pitchers_2020 <- na.omit(pitchers_2020)
 rpart.pred <- predict(rpart.tree, pitchers_2020,type="class")
 table(pitchers_2020$pitch_hand, rpart.pred, dnn=c("From","Classified into"))
 
-################################################
-## Attempt at boosting the tree, did not work ##
-################################################
+##################################
+## Attempt at boosting the tree ##
+##################################
 library(rsample)      
 library(gbm)          
 library(caret)        
 pitchers$pitch_hand <- as.numeric(as.factor(pitchers$pitch_hand))-1
 ##0 = left, 1 = right
+##split data in training and test
 pit.split <- initial_split(pitchers, prop = .7)
 pit.train <- training(pit.split)
 pit.test  <- testing(pit.split)
 attach(pit.train)
 
+##try a random hyper parameter config
 gbm.fit <- gbm(
   formula = pitch_hand ~ fastball_avg_speed+ fastball_avg_spin+ fastball_avg_break+ breaking_avg_speed+ breaking_avg_spin+ breaking_avg_break+ offspeed_avg_speed+ offspeed_avg_spin+ offspeed_avg_break,
   data = pit.train,
@@ -99,6 +103,8 @@ for(i in 1:nrow(hyper_grid)) {
   hyper_grid$min_RMSE[i] <- sqrt(min(gbm.tune$valid.error))
 }
 
+##this shows the best 10 model configs, I choose the parameters of the top model
+##This is a stochastic algorithm so if you rerun this, the parameters might differ
 hyper_grid %>% 
   dplyr::arrange(min_RMSE) %>%
   head(10)
@@ -113,9 +119,11 @@ gbm.fit.final <- gbm(
   n.minobsinnode = 15,
   bag.fraction = .65, 
   train.fraction = 1,
+  cv.folds = 5,
   n.cores = NULL, # will use all cores by default
   verbose = FALSE
 )  
+
 summary(
   gbm.fit.final, 
   cBars = 10,
@@ -149,10 +157,11 @@ plot.gbm(gbm.fit.final, i.var=c(1,4))
 plot.gbm(gbm.fit.final, i.var=c(1,8))
 
 ##exploring relative influence of all variables
+library(dplyr)
 effects <- tibble::as_tibble(gbm::summary.gbm(gbm.fit.final, 
                                                   plotit = FALSE))
 effects %>% utils::head()
-
+library(ggthemes)
 effects %>% 
   # arrange descending to get the top influencers
   dplyr::arrange(desc(rel.inf)) %>%
@@ -174,14 +183,14 @@ effects %>%
   ylab('Relative Influence') +
   ggtitle("variables plotted by influence in classification score")
 
-#I choose to put an arbitrary threshold on 0.7
+#I choose to put an arbitrary threshold on 0.7, this is a part that i do not 100% understand, so there is bias in this decisian
 table(pit.test$pitch_hand==0,pred<0.7)
-table(pit.test$pitch_hand)
 
 -##################################################################################################################
 ## End of boosting attempt: This turned out to be quite a topic, so i'm not 100% sure I did everything correctly ##
 ###################################################################################################################
 
+##trying another tree building method with pruning
 library(tree)
 attach(pitchers)
 pitchers$pitch_hand <- as.factor(pitchers$pitch_hand)  
@@ -215,6 +224,7 @@ clas <- MclustDA(pitchers[,7:15], pitchers$pitch_hand)
 summary(clas)
 ##33-39
 plot(clas)
+##choose 2 for a pairs-classification plot like previously
 
 ##flexible discriminant analysis
 library(mda)
@@ -223,6 +233,7 @@ fit <- fda(pitch_hand~fastball_avg_speed+ fastball_avg_spin+ fastball_avg_break+
 summary(fit)
 predictions <- predict(fit, pitchers[,7:15])
 table(pitchers$pitch_hand, predictions)
+##24-48
 
 ##KNN
 # fit model
@@ -231,13 +242,14 @@ library(caret)
 fit <- knn3(pitch_hand~fastball_avg_speed+ fastball_avg_spin+ fastball_avg_break+ breaking_avg_speed+ breaking_avg_spin+ breaking_avg_break+ offspeed_avg_speed+ offspeed_avg_spin+ offspeed_avg_break, data=pitchers, k=5)
 summary(fit)
 predictions <- predict(fit, pitchers[,7:15], type="class")
-table(predictions, pitchers$pitch_hand)
+table(pitchers$pitch_hand, predictions)
+##28-44
 
 ##Naive Bayes
 library(e1071)
-data(pitchers)
 # fit model
 fit <- naiveBayes(pitch_hand~fastball_avg_speed+ fastball_avg_spin+ fastball_avg_break+ breaking_avg_speed+ breaking_avg_spin+ breaking_avg_break+ offspeed_avg_speed+ offspeed_avg_spin+ offspeed_avg_break, data=pitchers)
 summary(fit)
 predictions <- predict(fit, pitchers[,7:15])
-table(predictions, pitchers$pitch_hand)
+table(pitchers$pitch_hand, predictions)
+##31-41

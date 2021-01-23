@@ -1,8 +1,13 @@
+#################################
+## Ordination of pitching data ##
+#################################
+
 ##loading the data
 library(dplyr)
 pitchers <- read.csv("data/baseballsavant_2019.csv")
 pitchers <- as.data.frame(pitchers)
 names(pitchers)
+##checking missing values
 for(i in 1:ncol(pitchers)) {   
   print(sum(is.na(pitchers[,i])))
 }
@@ -26,6 +31,7 @@ plot(cor(mat))
 pca <- princomp(mat)
 plot(pca)
 ##it's clear that the first 3-4 pca's are probably just picking up on the three different types of pitches
+##It's probably just catching up on the 3 types of pitches
 pca$loadings
 screeplot(pca, type="lines")
 summary(pca)
